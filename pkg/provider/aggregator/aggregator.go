@@ -89,25 +89,8 @@ func NewProviderAggregator(conf static.Providers) *ProviderAggregator {
 		p.quietAddProvider(conf.Rest)
 	}
 
-	if conf.KubernetesIngress != nil {
-		p.quietAddProvider(conf.KubernetesIngress)
-	}
-
-	if conf.KubernetesIngressNGINX != nil {
-		p.quietAddProvider(conf.KubernetesIngressNGINX)
-	}
-
-	if conf.KubernetesCRD != nil {
-		p.quietAddProvider(conf.KubernetesCRD)
-	}
-
-	if conf.Knative != nil {
-		p.quietAddProvider(conf.Knative)
-	}
-
-	if conf.KubernetesGateway != nil {
-		p.quietAddProvider(conf.KubernetesGateway)
-	}
+	// Kubernetes providers - can be excluded with nokubernetes build tag
+	p.addKubernetesProviders(conf)
 
 	if conf.Ecs != nil {
 		p.quietAddProvider(conf.Ecs)

@@ -14,17 +14,11 @@ import (
 	"github.com/traefik/traefik/v3/pkg/observability/logs"
 	otypes "github.com/traefik/traefik/v3/pkg/observability/types"
 	"github.com/traefik/traefik/v3/pkg/ping"
-	acmeprovider "github.com/traefik/traefik/v3/pkg/provider/acme"
 	"github.com/traefik/traefik/v3/pkg/provider/consulcatalog"
 	"github.com/traefik/traefik/v3/pkg/provider/docker"
 	"github.com/traefik/traefik/v3/pkg/provider/ecs"
 	"github.com/traefik/traefik/v3/pkg/provider/file"
 	"github.com/traefik/traefik/v3/pkg/provider/http"
-	"github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd"
-	"github.com/traefik/traefik/v3/pkg/provider/kubernetes/gateway"
-	"github.com/traefik/traefik/v3/pkg/provider/kubernetes/ingress"
-	ingressnginx "github.com/traefik/traefik/v3/pkg/provider/kubernetes/ingress-nginx"
-	"github.com/traefik/traefik/v3/pkg/provider/kubernetes/knative"
 	"github.com/traefik/traefik/v3/pkg/provider/kv/consul"
 	"github.com/traefik/traefik/v3/pkg/provider/kv/etcd"
 	"github.com/traefik/traefik/v3/pkg/provider/kv/redis"
@@ -33,6 +27,10 @@ import (
 	"github.com/traefik/traefik/v3/pkg/provider/rest"
 	"github.com/traefik/traefik/v3/pkg/tls"
 	"github.com/traefik/traefik/v3/pkg/types"
+
+	// Conditional imports for optional providers (Kubernetes, ACME)
+	// Use build tags: nokubernetes, noacme to exclude them
+	_ "github.com/traefik/traefik/v3/pkg/config/static/imports"
 )
 
 const (
@@ -239,23 +237,21 @@ func (t *Tracing) SetDefaults() {
 type Providers struct {
 	ProvidersThrottleDuration ptypes.Duration `description:"Backends throttle duration: minimum duration between 2 events from providers before applying a new configuration. It avoids unnecessary reloads if multiples events are sent in a short amount of time." json:"providersThrottleDuration,omitempty" toml:"providersThrottleDuration,omitempty" yaml:"providersThrottleDuration,omitempty" export:"true"`
 
-	Docker                 *docker.Provider               `description:"Enables Docker provider." json:"docker,omitempty" toml:"docker,omitempty" yaml:"docker,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
-	Swarm                  *docker.SwarmProvider          `description:"Enables Docker Swarm provider." json:"swarm,omitempty" toml:"swarm,omitempty" yaml:"swarm,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
-	File                   *file.Provider                 `description:"Enables File provider." json:"file,omitempty" toml:"file,omitempty" yaml:"file,omitempty" export:"true"`
-	KubernetesIngress      *ingress.Provider              `description:"Enables Kubernetes Ingress provider." json:"kubernetesIngress,omitempty" toml:"kubernetesIngress,omitempty" yaml:"kubernetesIngress,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
-	KubernetesIngressNGINX *ingressnginx.Provider         `description:"Enables Kubernetes Ingress NGINX provider." json:"kubernetesIngressNGINX,omitempty" toml:"kubernetesIngressNGINX,omitempty" yaml:"kubernetesIngressNGINX,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
-	KubernetesCRD          *crd.Provider                  `description:"Enables Kubernetes CRD provider." json:"kubernetesCRD,omitempty" toml:"kubernetesCRD,omitempty" yaml:"kubernetesCRD,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
-	KubernetesGateway      *gateway.Provider              `description:"Enables Kubernetes Gateway API provider." json:"kubernetesGateway,omitempty" toml:"kubernetesGateway,omitempty" yaml:"kubernetesGateway,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
-	Knative                *knative.Provider              `description:"Enables Knative provider." json:"knative,omitempty" toml:"knative,omitempty" yaml:"knative,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
-	Rest                   *rest.Provider                 `description:"Enables Rest provider." json:"rest,omitempty" toml:"rest,omitempty" yaml:"rest,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
-	ConsulCatalog          *consulcatalog.ProviderBuilder `description:"Enables Consul Catalog provider." json:"consulCatalog,omitempty" toml:"consulCatalog,omitempty" yaml:"consulCatalog,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
-	Nomad                  *nomad.ProviderBuilder         `description:"Enables Nomad provider." json:"nomad,omitempty" toml:"nomad,omitempty" yaml:"nomad,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
-	Ecs                    *ecs.Provider                  `description:"Enables AWS ECS provider." json:"ecs,omitempty" toml:"ecs,omitempty" yaml:"ecs,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
-	Consul                 *consul.ProviderBuilder        `description:"Enables Consul provider." json:"consul,omitempty" toml:"consul,omitempty" yaml:"consul,omitempty" label:"allowEmpty" file:"allowEmpty"  export:"true"`
-	Etcd                   *etcd.Provider                 `description:"Enables Etcd provider." json:"etcd,omitempty" toml:"etcd,omitempty" yaml:"etcd,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
-	ZooKeeper              *zk.Provider                   `description:"Enables ZooKeeper provider." json:"zooKeeper,omitempty" toml:"zooKeeper,omitempty" yaml:"zooKeeper,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
-	Redis                  *redis.Provider                `description:"Enables Redis provider." json:"redis,omitempty" toml:"redis,omitempty" yaml:"redis,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
-	HTTP                   *http.Provider                 `description:"Enables HTTP provider." json:"http,omitempty" toml:"http,omitempty" yaml:"http,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
+	Docker        *docker.Provider               `description:"Enables Docker provider." json:"docker,omitempty" toml:"docker,omitempty" yaml:"docker,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
+	Swarm         *docker.SwarmProvider          `description:"Enables Docker Swarm provider." json:"swarm,omitempty" toml:"swarm,omitempty" yaml:"swarm,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
+	File          *file.Provider                 `description:"Enables File provider." json:"file,omitempty" toml:"file,omitempty" yaml:"file,omitempty" export:"true"`
+	Rest          *rest.Provider                 `description:"Enables Rest provider." json:"rest,omitempty" toml:"rest,omitempty" yaml:"rest,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
+	ConsulCatalog *consulcatalog.ProviderBuilder `description:"Enables Consul Catalog provider." json:"consulCatalog,omitempty" toml:"consulCatalog,omitempty" yaml:"consulCatalog,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
+	Nomad         *nomad.ProviderBuilder         `description:"Enables Nomad provider." json:"nomad,omitempty" toml:"nomad,omitempty" yaml:"nomad,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
+	Ecs           *ecs.Provider                  `description:"Enables AWS ECS provider." json:"ecs,omitempty" toml:"ecs,omitempty" yaml:"ecs,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
+	Consul        *consul.ProviderBuilder        `description:"Enables Consul provider." json:"consul,omitempty" toml:"consul,omitempty" yaml:"consul,omitempty" label:"allowEmpty" file:"allowEmpty"  export:"true"`
+	Etcd          *etcd.Provider                 `description:"Enables Etcd provider." json:"etcd,omitempty" toml:"etcd,omitempty" yaml:"etcd,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
+	ZooKeeper     *zk.Provider                   `description:"Enables ZooKeeper provider." json:"zooKeeper,omitempty" toml:"zooKeeper,omitempty" yaml:"zooKeeper,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
+	Redis         *redis.Provider                `description:"Enables Redis provider." json:"redis,omitempty" toml:"redis,omitempty" yaml:"redis,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
+	HTTP          *http.Provider                 `description:"Enables HTTP provider." json:"http,omitempty" toml:"http,omitempty" yaml:"http,omitempty" label:"allowEmpty" file:"allowEmpty" export:"true"`
+
+	// Kubernetes providers - embedded struct, can be excluded with nokubernetes build tag
+	kubernetesProviders `json:",inline" toml:",inline" yaml:",inline"`
 
 	Plugin map[string]PluginConf `description:"Plugins configuration." json:"plugin,omitempty" toml:"plugin,omitempty" yaml:"plugin,omitempty"`
 }
@@ -306,37 +302,8 @@ func (c *Configuration) SetEffectiveConfiguration() {
 		}
 	}
 
-	// Configure Gateway API provider
-	if c.Providers.KubernetesGateway != nil {
-		entryPoints := make(map[string]gateway.Entrypoint)
-		for epName, entryPoint := range c.EntryPoints {
-			entryPoints[epName] = gateway.Entrypoint{Address: entryPoint.GetAddress(), HasHTTPTLSConf: entryPoint.HTTP.TLS != nil}
-		}
-
-		if c.Providers.KubernetesCRD != nil {
-			c.Providers.KubernetesCRD.FillExtensionBuilderRegistry(c.Providers.KubernetesGateway)
-		}
-
-		c.Providers.KubernetesGateway.EntryPoints = entryPoints
-	}
-
-	// Configure Ingress NGINX provider.
-	if c.Providers.KubernetesIngressNGINX != nil {
-		var nonTLSEntryPoints []string
-		for epName, entryPoint := range c.EntryPoints {
-			if entryPoint.HTTP.TLS == nil {
-				nonTLSEntryPoints = append(nonTLSEntryPoints, epName)
-			}
-		}
-
-		c.Providers.KubernetesIngressNGINX.NonTLSEntryPoints = nonTLSEntryPoints
-	}
-
-	// Defines the default rule syntax for the Kubernetes Ingress Provider.
-	// This allows the provider to adapt the matcher syntax to the desired rule syntax version.
-	if c.Core != nil && c.Providers.KubernetesIngress != nil {
-		c.Providers.KubernetesIngress.DefaultRuleSyntax = c.Core.DefaultRuleSyntax
-	}
+	// Configure Kubernetes providers (can be excluded with nokubernetes build tag)
+	c.setKubernetesEffectiveConfiguration()
 
 	for _, resolver := range c.CertificatesResolvers {
 		if resolver.ACME == nil {
@@ -426,16 +393,9 @@ func (c *Configuration) ValidateConfiguration() error {
 		}
 	}
 
-	if c.Providers != nil && c.Providers.KubernetesIngressNGINX != nil {
-		if c.Providers.KubernetesIngressNGINX.WatchNamespace != "" && c.Providers.KubernetesIngressNGINX.WatchNamespaceSelector != "" {
-			return errors.New("watchNamespace and watchNamespaceSelector options are mutually exclusive")
-		}
-	}
-
-	if c.Providers != nil && c.Providers.Knative != nil {
-		if c.Experimental == nil || !c.Experimental.Knative {
-			return errors.New("the experimental Knative feature must be enabled to use the Knative provider")
-		}
+	// Validate Kubernetes providers (can be excluded with nokubernetes build tag)
+	if err := c.validateKubernetesProviders(); err != nil {
+		return err
 	}
 
 	if c.AccessLog != nil && c.AccessLog.OTLP != nil {
